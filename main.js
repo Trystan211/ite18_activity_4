@@ -41,12 +41,18 @@ scene.add(ocean);
 // Animate Ocean Waves
 const waveSpeed = 0.03;
 function animateOcean() {
-  const time = performance.now() * 0.001;
-  ocean.geometry.vertices.forEach((vertex, i) => {
-    const wave = Math.sin(vertex.x * 0.5 + time) + Math.cos(vertex.y * 0.5 + time);
-    vertex.z = wave * waveSpeed;
-  });
-  ocean.geometry.verticesNeedUpdate = true;
+  const positions = oceanGeometry.attributes.position.array; // Ensure this exists
+  const vertexCount = positions.length / 3; // Total number of vertices in the geometry
+
+  for (let i = 0; i < vertexCount; i++) {
+    const yIndex = i * 3 + 1; // Y-coordinate index
+    const x = positions[i * 3]; // X-coordinate
+    const z = positions[i * 3 + 2]; // Z-coordinate
+    positions[yIndex] = Math.sin(Date.now() * 0.001 + x * 0.5 + z * 0.5) * 0.5; // Wave effect
+  }
+
+  oceanGeometry.attributes.position.needsUpdate = true; // Notify Three.js about the change
+  oceanGeometry.computeVertexNormals(); // Recompute normals for proper shading
 }
 
 // Palm Trees
