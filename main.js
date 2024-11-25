@@ -61,7 +61,7 @@ function animateOcean() {
 
 // Rain
 const rainGeometry = new THREE.BufferGeometry();
-const rainCount = 1000;
+const rainCount = 5000;
 const rainPositions = new Float32Array(rainCount * 3);
 
 for (let i = 0; i < rainCount; i++) {
