@@ -1,173 +1,164 @@
-// Import necessary classes from Three.js (if using modules)
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.152.0/build/three.module.js';
 import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.152.0/examples/jsm/controls/OrbitControls.js';
+import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.152.0/examples/jsm/loaders/GLTFLoader.js';
 
-// Basic Three.js Setup
+// Scene Setup
 const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-const renderer = new THREE.WebGLRenderer();
+scene.background = new THREE.Color(0x87CEEB); // Sky blue background
+
+const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 100);
+camera.position.set(0, 5, 15);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
 
-// OrbitControls
-const controls = new OrbitControls(camera, renderer.domElement);  // Enable mouse controls
+// Add OrbitControls
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.25;
 
-// Lighting
-const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+// Lights
+const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+directionalLight.position.set(5, 10, 5);
+scene.add(directionalLight);
+
+const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
 scene.add(ambientLight);
 
-const movingLight = new THREE.PointLight(0xffaa33, 1, 100);
-movingLight.position.set(0, 10, 0);
-scene.add(movingLight);
+// Ocean (Dynamic water simulation)
+const oceanGeometry = new THREE.PlaneGeometry(50, 50, 64, 64);
+const oceanMaterial = new THREE.MeshPhongMaterial({
+  color: 0x1E90FF,
+  shininess: 80,
+  transparent: true,
+  opacity: 0.8,
+});
+const ocean = new THREE.Mesh(oceanGeometry, oceanMaterial);
+ocean.rotation.x = -Math.PI / 2;
+scene.add(ocean);
 
-// Ocean
-let ocean;
-function createOcean() {
-    const oceanGeometry = new THREE.PlaneGeometry(50, 50, 100, 100);
-    const oceanMaterial = new THREE.MeshPhysicalMaterial({
-        color: 0x1e90ff,
-        metalness: 0.8,
-        roughness: 0.4,
-        clearcoat: 0.3,
-        clearcoatRoughness: 0.1,
-        reflectivity: 0.6,
-        side: THREE.DoubleSide,
-    });
-    ocean = new THREE.Mesh(oceanGeometry, oceanMaterial);
-    ocean.rotation.x = -Math.PI / 2;
-    scene.add(ocean);
+// Animate Ocean Waves
+const waveSpeed = 0.03;
+function animateOcean() {
+  const time = performance.now() * 0.001;
+  ocean.geometry.vertices.forEach((vertex, i) => {
+    const wave = Math.sin(vertex.x * 0.5 + time) + Math.cos(vertex.y * 0.5 + time);
+    vertex.z = wave * waveSpeed;
+  });
+  ocean.geometry.verticesNeedUpdate = true;
 }
-createOcean();
 
-// Palm Trees with Raycasting
-const treeMaterial = new THREE.MeshStandardMaterial({ color: 0x228b22 });
-const palmTrees = [];
-function createPalmTree(x, z) {
-    const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.2, 2, 16), new THREE.MeshStandardMaterial({ color: 0x8b4513 }));
-    trunk.position.set(x, 1, z);
-    const leaves = new THREE.Mesh(new THREE.ConeGeometry(0.5, 1, 8), treeMaterial);
-    leaves.position.set(x, 2, z);
-    scene.add(trunk, leaves);
-    palmTrees.push(trunk); // Add trunk for raycasting
+// Palm Trees
+const palmMaterial = new THREE.MeshStandardMaterial({ color: 0x8B4513 }); // Brown trunks
+const leavesMaterial = new THREE.MeshStandardMaterial({ color: 0x006400 }); // Green leaves
+const raycastingObjects = [];
+
+for (let i = 0; i < 10; i++) {
+  const x = Math.random() * 20 - 10;
+  const z = Math.random() * 20 - 10;
+
+  // Trunk
+  const trunk = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.2, 0.3, 4),
+    palmMaterial
+  );
+  trunk.position.set(x, 2, z);
+  raycastingObjects.push(trunk);
+  scene.add(trunk);
+
+  // Leaves
+  const leaves = new THREE.Mesh(
+    new THREE.ConeGeometry(2, 2, 16),
+    leavesMaterial
+  );
+  leaves.position.set(x, 5, z);
+  raycastingObjects.push(leaves);
+  scene.add(leaves);
 }
-createPalmTree(-5, 5);
-createPalmTree(10, -10);
 
-// Rain
+// Blue Rain Particles
+const rainCount = 1000;
 const rainGeometry = new THREE.BufferGeometry();
-const rainCount = 1500;
-const rainPositions = new Float32Array(rainCount * 3);
+const rainPositions = [];
 for (let i = 0; i < rainCount; i++) {
-    rainPositions[i * 3] = Math.random() * 50 - 25; // X
-    rainPositions[i * 3 + 1] = Math.random() * 30;  // Y
-    rainPositions[i * 3 + 2] = Math.random() * 50 - 25; // Z
+  rainPositions.push(
+    Math.random() * 40 - 20,
+    Math.random() * 20 + 5,
+    Math.random() * 40 - 20
+  );
 }
-rainGeometry.setAttribute('position', new THREE.BufferAttribute(rainPositions, 3));
-const rainMaterial = new THREE.PointsMaterial({ color: 0x87ceeb, size: 0.2 });
+rainGeometry.setAttribute(
+  'position',
+  new THREE.Float32BufferAttribute(rainPositions, 3)
+);
+const rainMaterial = new THREE.PointsMaterial({
+  color: 0x0000ff,
+  size: 0.2,
+  transparent: true,
+});
 const rain = new THREE.Points(rainGeometry, rainMaterial);
 scene.add(rain);
 
-// Boat
-const boat = new THREE.Mesh(
-    new THREE.BoxGeometry(1, 0.5, 2),
-    new THREE.MeshStandardMaterial({ color: 0x8b0000 })
-);
-boat.position.set(0, 0.3, 10);
-scene.add(boat);
+// Moving Lights
+const movingLights = [];
+for (let i = 0; i < 5; i++) {
+  const light = new THREE.PointLight(0xff0000, 1, 10);
+  light.position.set(Math.random() * 20 - 10, 5, Math.random() * 20 - 10);
+  movingLights.push(light);
+  scene.add(light);
+}
 
-// Ripples on Click
+// Animate Moving Lights
+function animateLights() {
+  movingLights.forEach((light, index) => {
+    light.position.x += Math.sin(performance.now() * 0.001 + index) * 0.05;
+    light.position.z += Math.cos(performance.now() * 0.001 + index) * 0.05;
+  });
+}
+
+// Raycasting Setup
 const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
-window.addEventListener('click', (event) => {
-    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-    mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-    raycaster.setFromCamera(mouse, camera);
-    const intersects = raycaster.intersectObject(ocean);
-    if (intersects.length > 0) {
-        const ripple = new THREE.Mesh(
-            new THREE.CircleGeometry(0.5, 16),
-            new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.5 })
-        );
-        ripple.rotation.x = -Math.PI / 2;
-        ripple.position.set(intersects[0].point.x, 0.1, intersects[0].point.z);
-        scene.add(ripple);
+let intersectedObject = null;
 
-        // Fade out and remove the ripple
-        setTimeout(() => scene.remove(ripple), 1000);
+window.addEventListener('click', (event) => {
+  mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+  mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+  raycaster.setFromCamera(mouse, camera);
+
+  const intersects = raycaster.intersectObjects(raycastingObjects);
+
+  if (intersects.length > 0) {
+    if (intersectedObject) {
+      intersectedObject.material.color.set(0x8B4513);
     }
+
+    intersectedObject = intersects[0].object;
+    intersectedObject.material.color.set(0xffff00); // Highlight color
+  }
 });
 
-// Animate Waves
-function animateWaves() {
-    const time = Date.now() * 0.001;
-    const positions = ocean.geometry.attributes.position.array;
-
-    for (let i = 0; i < positions.length; i += 3) {
-        positions[i + 2] = Math.sin((i + time * 5) * 0.05); // Wave effect
-    }
-    ocean.geometry.attributes.position.needsUpdate = true;
-}
-
-// Animate Rain
-function animateRain() {
-    const positions = rain.geometry.attributes.position.array;
-    for (let i = 1; i < positions.length; i += 3) {
-        positions[i] -= 0.3; // Move rain down
-        if (positions[i] < 0) {
-            positions[i] = Math.random() * 30; // Reset to top
-            createSplash(positions[i - 1], positions[i + 1]);
-        }
-    }
-    rain.geometry.attributes.position.needsUpdate = true;
-}
-
-// Create Splash
-function createSplash(x, z) {
-    const splash = new THREE.Mesh(
-        new THREE.SphereGeometry(0.1, 8, 8),
-        new THREE.MeshBasicMaterial({ color: 0x87ceeb, transparent: true, opacity: 0.5 })
-    );
-    splash.position.set(x, 0.1, z);
-    scene.add(splash);
-
-    // Fade out splash
-    setTimeout(() => {
-        scene.remove(splash);
-    }, 500);
-}
-
-// Animate Boat
-function animateBoat() {
-    const time = Date.now() * 0.001;
-    boat.position.y = 0.5 + Math.sin(time) * 0.2; // Vertical motion
-    boat.rotation.z = Math.sin(time * 0.5) * 0.1; // Rocking motion
-}
-
-// Handle Window Resizing
+// Window Resize Handling
 window.addEventListener('resize', () => {
-    camera.aspect = window.innerWidth / window.innerHeight;
-    camera.updateProjectionMatrix();
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    controls.update();  // Update controls after resizing
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
 // Animation Loop
-camera.position.set(0, 10, 30);
-function animate() {
-    requestAnimationFrame(animate);
+const clock = new THREE.Clock();
 
-    // Update animations
-    animateWaves();
-    animateRain();
-    animateBoat();
+const animate = () => {
+  const delta = clock.getDelta();
+  controls.update();
 
-    // Move light in a circular path
-    movingLight.position.x = Math.sin(Date.now() * 0.001) * 10;
-    movingLight.position.z = Math.cos(Date.now() * 0.001) * 10;
+  animateOcean();
+  animateLights();
 
-    // Update OrbitControls (to handle user input)
-    controls.update();  // Only needed if controls.enableDamping or controls.auto-rotation are enabled
+  renderer.render(scene, camera);
+  requestAnimationFrame(animate);
+};
 
-    renderer.render(scene, camera);
-}
 animate();
