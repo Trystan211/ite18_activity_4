@@ -1,6 +1,6 @@
 // Import necessary classes from Three.js (if using modules)
-import * as THREE from 'three';
-import { OrbitControls } from 'three/examples/js/controls/OrbitControls';
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.152.0/build/three.module.js';
+import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.152.0/examples/jsm/controls/OrbitControls.js';
 
 // Basic Three.js Setup
 const scene = new THREE.Scene();
