@@ -75,18 +75,25 @@ let boat = null;
 
 loader.load(
     'https://trystan211.github.io/ite18_activity_4/ramona_steam_boat.glb', 
-    (gltf) => {
+ (gltf) => {
         boat = gltf.scene;
-        boat.scale.set(0.001, 0.001, 0.001); // Scale the boat appropriately
-        boat.position.set(0, 1, 0); // Position the boat on the ocean
+        boat.position.set(0, 1, 0); // Position the boat
         scene.add(boat);
+        
+        // Check if the boat is huge right after loading
+        const box = new THREE.Box3().setFromObject(boat);
+        const size = new THREE.Vector3();
+        box.getSize(size);
+        console.log('Boat dimensions:', size);
+
+        // Apply a very aggressive scale
+        boat.scale.set(0.001, 0.001, 0.001); // Tiny scale factor
     },
     undefined,
     (error) => {
         console.error("Error loading the boat model:", error);
     }
 );
-
 // Rain Geometry
 const rainCount = 10000;
 const rainGeometry = new THREE.BufferGeometry();
