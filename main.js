@@ -33,36 +33,26 @@ geometry.rotateX(-Math.PI / 2);
 const oceanMaterial = new THREE.ShaderMaterial({
     uniforms: {
         time: { value: 0 },
-        waveHeight: { value: 4.0 }, // Increased wave height
-        waveFrequency: { value: 0.7 }, // Lowered frequency for larger waves
+        waveHeight: { value: 2.5 },
+        waveFrequency: { value: 0.5 },
         deepColor: { value: new THREE.Color(0x001d3a) },
         shallowColor: { value: new THREE.Color(0x1e90ff) },
     },
-    vertexShader: 
-uniform float time;
-uniform float waveHeight;
-uniform float waveFrequency;
-varying vec2 vUv;
+    vertexShader: `
+        uniform float time;
+        uniform float waveHeight;
+        uniform float waveFrequency;
+        varying vec2 vUv;
 
-void main() {
-    vUv = uv;
-    vec3 pos = position;
-
-    // Primary wave
-    pos.y += sin(pos.x * waveFrequency + time * 2.0) * waveHeight * 0.9;
-    pos.y += cos(pos.z * waveFrequency + time * 1.7) * waveHeight * 0.8;
-
-    // Secondary, higher-frequency waves for choppiness
-    pos.y += sin(pos.x * waveFrequency * 2.5 + time * 3.0) * waveHeight * 0.3;
-    pos.y += cos(pos.z * waveFrequency * 2.5 + time * 2.5) * waveHeight * 0.25;
-
-    // Randomized smaller ripples
-    pos.y += sin((pos.x + pos.z) * waveFrequency * 5.0 + time * 4.0) * waveHeight * 0.1;
-
-    gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
-}
-    ,
-    fragmentShader: 
+        void main() {
+            vUv = uv;
+            vec3 pos = position;
+            pos.y += sin(pos.x * waveFrequency + time) * waveHeight * 0.8;
+            pos.y += cos(pos.z * waveFrequency + time * 1.5) * waveHeight * 0.6;
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
+        }
+    `,
+    fragmentShader: `
         uniform vec3 deepColor;
         uniform vec3 shallowColor;
         varying vec2 vUv;
@@ -71,7 +61,7 @@ void main() {
             vec3 color = mix(shallowColor, deepColor, vUv.y);
             gl_FragColor = vec4(color, 1.0);
         }
-    ,
+    `,
 });
 
 // Add Ocean Mesh
