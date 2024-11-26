@@ -77,7 +77,7 @@ loader.load(
     'https://trystan211.github.io/ite18_activity_4/ramona_steam_boat.glb', 
     (gltf) => {
         boat = gltf.scene;
-        boat.scale.set(0.01, 0.01, 0.01); // Scale the boat appropriately
+        boat.scale.set(0.001, 0.001, 0.001); // Scale the boat appropriately
         boat.position.set(0, 1, 0); // Position the boat on the ocean
         scene.add(boat);
     },
