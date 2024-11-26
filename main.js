@@ -74,7 +74,7 @@ const loader = new GLTFLoader();
 let boat = null;
 
 loader.load(
-    'https://trystan211.github.io/ite18_activity_4/low_poly_fox_by_pixelmannen_animated.glb', // Replace with your boat model URL
+    'https://trystan211.github.io/ite18_activity_4/ramona_steam_boat.glb', // Replace with your boat model URL
     (gltf) => {
         boat = gltf.scene;
         boat.scale.set(0.5, 0.5, 0.5); // Scale the boat appropriately
