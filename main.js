@@ -77,7 +77,7 @@ loader.load(
     'https://trystan211.github.io/ite18_activity_4/ramona_steam_boat.glb', 
  (gltf) => {
         boat = gltf.scene;
-        boat.position.set(1, 3, 1); // Position the boat
+        boat.position.set(1, 2.5, 1); // Position the boat
         scene.add(boat);
         
         // Check if the boat is huge right after loading
