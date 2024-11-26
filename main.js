@@ -87,7 +87,7 @@ loader.load(
         console.log('Boat dimensions:', size);
 
         // Apply a very aggressive scale
-        boat.scale.set(0.001, 0.001, 0.001); // Tiny scale factor
+        boat.scale.set(0.01, 0.01, 0.01); // Tiny scale factor
     },
     undefined,
     (error) => {
