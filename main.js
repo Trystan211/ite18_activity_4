@@ -3,7 +3,7 @@ import { OrbitControls } from "https://cdn.jsdelivr.net/npm/three@0.152.2/exampl
 
 // Scene Setup
 const scene = new THREE.Scene();
-scene.fog = new THREE.Fog(0x000000, 10, 50);
+scene.fog = new THREE.Fog(0x000000, 10, 50); // Fog for depth
 
 // Renderer Setup
 const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -20,16 +20,18 @@ scene.add(camera);
 // Orbit Controls
 const controls = new OrbitControls(camera, renderer.domElement);
 
-// Dynamic Light
-const sunlight = new THREE.DirectionalLight(0xffffff, 1);
-scene.add(sunlight);
+// Directional Light (Dynamic)
+const dynamicLight = new THREE.PointLight(0xffcc88, 2, 100);
+dynamicLight.position.set(10, 20, 10);
+scene.add(dynamicLight);
 
-// Add a small visual representation of the light source (optional)
-const lightHelper = new THREE.Mesh(
-    new THREE.SphereGeometry(0.3, 16, 16),
-    new THREE.MeshBasicMaterial({ color: 0xffff00 })
-);
+// Light Helper (Optional)
+const lightHelper = new THREE.PointLightHelper(dynamicLight, 2);
 scene.add(lightHelper);
+
+// Static Ambient Light for overall illumination
+const ambientLight = new THREE.AmbientLight(0x404040, 0.5);
+scene.add(ambientLight);
 
 // Ocean Geometry
 const geometry = new THREE.PlaneGeometry(50, 50, 100, 100);
@@ -43,48 +45,28 @@ const oceanMaterial = new THREE.ShaderMaterial({
         waveFrequency: { value: 3.0 },
         deepColor: { value: new THREE.Color(0x000d3a) },
         shallowColor: { value: new THREE.Color(0x1e90ff) },
-        lightColor: { value: new THREE.Color(0xffffff) }, // Highlight color for specular effects
     },
     vertexShader: `
         uniform float time;
         uniform float waveHeight;
         uniform float waveFrequency;
         varying vec2 vUv;
-        varying float vWave; // Pass wave height to fragment shader
 
         void main() {
             vUv = uv;
             vec3 pos = position;
-
-            // Combine multiple wave effects for complexity
-            float wave1 = sin(pos.x * waveFrequency + time) * waveHeight;
-            float wave2 = cos(pos.z * waveFrequency * 0.5 + time * 1.2) * waveHeight * 0.8;
-            float wave3 = sin((pos.x + pos.z) * waveFrequency * 0.7 + time * 0.8) * waveHeight * 0.5;
-            pos.y += wave1 + wave2 + wave3;
-
-            vWave = wave1 + wave2 + wave3; // Send combined wave height to fragment shader
-
+            pos.y += sin(pos.x * waveFrequency + time) * waveHeight;
+            pos.y += cos(pos.z * waveFrequency + time * 1.5) * waveHeight;
             gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
         }
     `,
     fragmentShader: `
         uniform vec3 deepColor;
         uniform vec3 shallowColor;
-        uniform vec3 lightColor;
         varying vec2 vUv;
-        varying float vWave;
 
         void main() {
-            // Blend colors based on UV coordinates and wave height
-            float depth = smoothstep(0.0, 1.0, vUv.y + vWave * 0.1);
-            vec3 baseColor = mix(shallowColor, deepColor, depth);
-
-            // Add specular highlights
-            float spec = pow(max(dot(normalize(vec3(0.0, 1.0, 0.0)), vec3(0.0, 1.0, 0.0)), 0.0), 10.0);
-            vec3 highlight = lightColor * spec;
-
-            // Final color
-            vec3 color = baseColor + highlight * 0.2;
+            vec3 color = mix(shallowColor, deepColor, vUv.y);
             gl_FragColor = vec4(color, 1.0);
         }
     `,
@@ -125,21 +107,8 @@ scene.add(rain);
 // Animation Loop
 const clock = new THREE.Clock();
 function animate() {
-    const elapsedTime = clock.getElapsedTime();
-
     // Update Ocean
-    oceanMaterial.uniforms.time.value = elapsedTime;
-
-    // Update Dynamic Light Position (Circular Motion)
-    const radius = 15;
-    sunlight.position.set(
-        Math.sin(elapsedTime) * radius, // X
-        10,                             // Y (height of the light)
-        Math.cos(elapsedTime) * radius  // Z
-    );
-
-    // Update Light Helper Position (optional)
-    lightHelper.position.copy(sunlight.position);
+    oceanMaterial.uniforms.time.value = clock.getElapsedTime();
 
     // Update Rain
     const positions = rain.geometry.attributes.position.array;
@@ -150,6 +119,12 @@ function animate() {
         }
     }
     rain.geometry.attributes.position.needsUpdate = true;
+
+    // Update Dynamic Light
+    const time = clock.getElapsedTime();
+    dynamicLight.position.x = Math.sin(time) * 20; // Light moves left and right
+    dynamicLight.position.z = Math.cos(time) * 20; // Light moves forward and back
+    dynamicLight.color.setHSL(Math.sin(time * 0.5) * 0.5 + 0.5, 1, 0.6); // Color changes dynamically
 
     // Render Scene
     renderer.render(scene, camera);
