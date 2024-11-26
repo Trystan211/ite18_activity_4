@@ -3,7 +3,7 @@ import { OrbitControls } from "https://cdn.jsdelivr.net/npm/three@0.152.2/exampl
 
 // Scene Setup
 const scene = new THREE.Scene();
-scene.fog = new THREE.Fog(0x000000, 10, 50); // Add fog for depth effect
+scene.fog = new THREE.Fog(0x000000, 10, 50); // Fog for stormy depth effect
 
 // Renderer Setup
 const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -33,32 +33,56 @@ geometry.rotateX(-Math.PI / 2);
 const oceanMaterial = new THREE.ShaderMaterial({
     uniforms: {
         time: { value: 0 },
-        waveHeight: { value: 2.5 }, // Increased wave height
-        waveFrequency: { value: 0.5 }, // Lowered frequency for larger waves
+        waveHeight: { value: 2.5 }, // Larger waves
+        waveFrequency: { value: 0.5 }, // Lower frequency for larger waves
+        smallWaveHeight: { value: 0.5 }, // Smaller, secondary waves
+        smallWaveFrequency: { value: 5.0 }, // High-frequency ripples
         deepColor: { value: new THREE.Color(0x001d3a) },
         shallowColor: { value: new THREE.Color(0x1e90ff) },
+        foamColor: { value: new THREE.Color(0xffffff) }, // Foam color
     },
     vertexShader: `
         uniform float time;
         uniform float waveHeight;
         uniform float waveFrequency;
+        uniform float smallWaveHeight;
+        uniform float smallWaveFrequency;
         varying vec2 vUv;
+        varying float vWaveHeight;
 
         void main() {
             vUv = uv;
             vec3 pos = position;
-            pos.y += sin(pos.x * waveFrequency + time) * waveHeight * 0.8;
-            pos.y += cos(pos.z * waveFrequency + time * 1.5) * waveHeight * 0.6;
+
+            // Main large waves
+            float largeWave = sin(pos.x * waveFrequency + time) * waveHeight * 0.8;
+            largeWave += cos(pos.z * waveFrequency + time * 1.5) * waveHeight * 0.6;
+
+            // Smaller, stormy ripples
+            float smallWave = sin(pos.x * smallWaveFrequency + time * 2.0) * smallWaveHeight;
+            smallWave += cos(pos.z * smallWaveFrequency + time * 2.5) * smallWaveHeight;
+
+            pos.y += largeWave + smallWave;
+
+            vWaveHeight = pos.y; // Pass wave height to fragment shader
             gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
         }
     `,
     fragmentShader: `
         uniform vec3 deepColor;
         uniform vec3 shallowColor;
+        uniform vec3 foamColor;
         varying vec2 vUv;
+        varying float vWaveHeight;
 
         void main() {
+            // Color blend based on depth
             vec3 color = mix(shallowColor, deepColor, vUv.y);
+
+            // Add foam based on wave height
+            float foam = smoothstep(0.6, 1.0, abs(vWaveHeight)); // Foam appears on high crests
+            color = mix(color, foamColor, foam);
+
             gl_FragColor = vec4(color, 1.0);
         }
     `,
