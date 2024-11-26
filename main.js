@@ -3,7 +3,7 @@ import { OrbitControls } from "https://cdn.jsdelivr.net/npm/three@0.152.2/exampl
 
 // Scene Setup
 const scene = new THREE.Scene();
-scene.fog = new THREE.Fog(0x000000, 10, 50); // Fog for depth
+scene.fog = new THREE.Fog(0x000000, 10, 50); // Add fog for depth effect
 
 // Renderer Setup
 const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -20,30 +20,22 @@ scene.add(camera);
 // Orbit Controls
 const controls = new OrbitControls(camera, renderer.domElement);
 
-// Directional Light (Dynamic)
-const dynamicLight = new THREE.PointLight(0xffcc88, 2, 100);
-dynamicLight.position.set(10, 20, 10);
+// Dynamic Light
+const dynamicLight = new THREE.PointLight(0xffffff, 2, 50);
+dynamicLight.position.set(0, 10, 0); // Initial light position
 scene.add(dynamicLight);
 
-// Light Helper (Optional)
-const lightHelper = new THREE.PointLightHelper(dynamicLight, 2);
-scene.add(lightHelper);
-
-// Static Ambient Light for overall illumination
-const ambientLight = new THREE.AmbientLight(0x404040, 0.5);
-scene.add(ambientLight);
-
 // Ocean Geometry
-const geometry = new THREE.PlaneGeometry(50, 50, 100, 100);
+const geometry = new THREE.PlaneGeometry(50, 50, 200, 200); // Increased detail
 geometry.rotateX(-Math.PI / 2);
 
 // Ocean Shader Material
 const oceanMaterial = new THREE.ShaderMaterial({
     uniforms: {
         time: { value: 0 },
-        waveHeight: { value: 1.5 },
-        waveFrequency: { value: 3.0 },
-        deepColor: { value: new THREE.Color(0x000d3a) },
+        waveHeight: { value: 2.5 }, // Increased wave height
+        waveFrequency: { value: 0.5 }, // Lowered frequency for larger waves
+        deepColor: { value: new THREE.Color(0x001d3a) },
         shallowColor: { value: new THREE.Color(0x1e90ff) },
     },
     vertexShader: `
@@ -55,8 +47,8 @@ const oceanMaterial = new THREE.ShaderMaterial({
         void main() {
             vUv = uv;
             vec3 pos = position;
-            pos.y += sin(pos.x * waveFrequency + time) * waveHeight;
-            pos.y += cos(pos.z * waveFrequency + time * 1.5) * waveHeight;
+            pos.y += sin(pos.x * waveFrequency + time) * waveHeight * 0.8;
+            pos.y += cos(pos.z * waveFrequency + time * 1.5) * waveHeight * 0.6;
             gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
         }
     `,
@@ -107,8 +99,10 @@ scene.add(rain);
 // Animation Loop
 const clock = new THREE.Clock();
 function animate() {
+    const elapsedTime = clock.getElapsedTime();
+
     // Update Ocean
-    oceanMaterial.uniforms.time.value = clock.getElapsedTime();
+    oceanMaterial.uniforms.time.value = elapsedTime;
 
     // Update Rain
     const positions = rain.geometry.attributes.position.array;
@@ -120,11 +114,12 @@ function animate() {
     }
     rain.geometry.attributes.position.needsUpdate = true;
 
-    // Update Dynamic Light
-    const time = clock.getElapsedTime();
-    dynamicLight.position.x = Math.sin(time) * 20; // Light moves left and right
-    dynamicLight.position.z = Math.cos(time) * 20; // Light moves forward and back
-    dynamicLight.color.setHSL(Math.sin(time * 0.5) * 0.5 + 0.5, 1, 0.6); // Color changes dynamically
+    // Move Light Source
+    dynamicLight.position.set(
+        10 * Math.sin(elapsedTime * 0.5),
+        10,
+        10 * Math.cos(elapsedTime * 0.5)
+    );
 
     // Render Scene
     renderer.render(scene, camera);
