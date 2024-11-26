@@ -27,14 +27,14 @@ dynamicLight.position.set(0, 10, 0); // Initial light position
 scene.add(dynamicLight);
 
 // Ocean Geometry
-const geometry = new THREE.PlaneGeometry(50, 50, 200, 200); // Increased detail
+const geometry = new THREE.PlaneGeometry(75, 75, 300, 300); // Increased detail
 geometry.rotateX(-Math.PI / 2);
 
 // Ocean Shader Material
 const oceanMaterial = new THREE.ShaderMaterial({
     uniforms: {
         time: { value: 0 },
-        waveHeight: { value: 2.5 }, // Increased wave height
+        waveHeight: { value: 1.5 }, // Increased wave height
         waveFrequency: { value: 0.5 }, // Lowered frequency for larger waves
         deepColor: { value: new THREE.Color(0x001d3a) },
         shallowColor: { value: new THREE.Color(0x1e90ff) },
