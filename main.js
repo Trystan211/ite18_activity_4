@@ -1,5 +1,6 @@
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.152.2/build/three.module.js";
 import { OrbitControls } from "https://cdn.jsdelivr.net/npm/three@0.152.2/examples/jsm/controls/OrbitControls.js";
+import { GLTFLoader } from "https://cdn.jsdelivr.net/npm/three@0.152.2/examples/jsm/loaders/GLTFLoader.js";
 
 // Scene Setup
 const scene = new THREE.Scene();
@@ -64,10 +65,27 @@ const oceanMaterial = new THREE.ShaderMaterial({
     `,
 });
 
-
 // Add Ocean Mesh
 const ocean = new THREE.Mesh(geometry, oceanMaterial);
 scene.add(ocean);
+
+// Load Boat Model
+const loader = new GLTFLoader();
+let boat = null;
+
+loader.load(
+    'https://trystan211.github.io/ite18_activity_4/low_poly_fox_by_pixelmannen_animated.glb', // Replace with your boat model URL
+    (gltf) => {
+        boat = gltf.scene;
+        boat.scale.set(0.5, 0.5, 0.5); // Scale the boat appropriately
+        boat.position.set(0, 1, 0); // Position the boat on the ocean
+        scene.add(boat);
+    },
+    undefined,
+    (error) => {
+        console.error("Error loading the boat model:", error);
+    }
+);
 
 // Rain Geometry
 const rainCount = 10000;
@@ -121,6 +139,13 @@ function animate() {
         10,
         10 * Math.cos(elapsedTime * 0.5)
     );
+
+    // Move the Boat with the Waves
+    if (boat) {
+        boat.position.x = Math.sin(elapsedTime * 0.5) * 5; // Boat moves along the X-axis with the waves
+        boat.position.z = Math.cos(elapsedTime * 0.5) * 5; // Boat moves along the Z-axis with the waves
+        boat.position.y = Math.sin(elapsedTime * 0.5) * 2 + 1; // Boat moves up and down with the ocean
+    }
 
     // Render Scene
     renderer.render(scene, camera);
