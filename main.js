@@ -3,7 +3,7 @@ import { OrbitControls } from "https://cdn.jsdelivr.net/npm/three@0.152.2/exampl
 
 // Scene Setup
 const scene = new THREE.Scene();
-scene.fog = new THREE.Fog(0x000000, 10, 50); // Stormy atmosphere fog
+scene.fog = new THREE.Fog(0x000000, 10, 50); // Add fog for depth effect
 
 // Renderer Setup
 const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -22,90 +22,89 @@ const controls = new OrbitControls(camera, renderer.domElement);
 
 // Dynamic Light
 const dynamicLight = new THREE.PointLight(0xffffff, 2, 50);
-dynamicLight.position.set(0, 10, 0);
+dynamicLight.position.set(0, 10, 0); // Initial light position
 scene.add(dynamicLight);
 
-// Starry Sky (Background Effect)
-const starGeometry = new THREE.BufferGeometry();
-const starCount = 1000;
-const starPositions = [];
-for (let i = 0; i < starCount; i++) {
-    const x = (Math.random() - 0.5) * 200;
-    const y = Math.random() * 50 + 10;
-    const z = (Math.random() - 0.5) * 200;
-    starPositions.push(x, y, z);
-}
-starGeometry.setAttribute("position", new THREE.Float32BufferAttribute(starPositions, 3));
-const starMaterial = new THREE.PointsMaterial({ color: 0xffffff, size: 0.5 });
-const stars = new THREE.Points(starGeometry, starMaterial);
-scene.add(stars);
-
 // Ocean Geometry
-const geometry = new THREE.PlaneGeometry(50, 50, 400, 400); // High subdivisions for smooth waves
+const geometry = new THREE.PlaneGeometry(50, 50, 200, 200); // Increased detail
 geometry.rotateX(-Math.PI / 2);
 
 // Ocean Shader Material
 const oceanMaterial = new THREE.ShaderMaterial({
     uniforms: {
         time: { value: 0 },
-        waveHeight: { value: 1.5 }, // Adjusted for smoother wave dynamics
-        waveFrequency: { value: 0.6 },
-        secondaryWaveHeight: { value: 0.3 },
-        secondaryWaveFrequency: { value: 2.0 },
-        foamColor: { value: new THREE.Color(0xffffff) },
+        waveHeight: { value: 4.0 }, // Increased wave height
+        waveFrequency: { value: 0.7 }, // Lowered frequency for larger waves
         deepColor: { value: new THREE.Color(0x001d3a) },
         shallowColor: { value: new THREE.Color(0x1e90ff) },
     },
-    vertexShader: `
-        uniform float time;
-        uniform float waveHeight;
-        uniform float waveFrequency;
-        uniform float secondaryWaveHeight;
-        uniform float secondaryWaveFrequency;
-        varying vec2 vUv;
-        varying float vWaveHeight;
+    vertexShader: 
+uniform float time;
+uniform float waveHeight;
+uniform float waveFrequency;
+varying vec2 vUv;
 
-        void main() {
-            vUv = uv;
-            vec3 pos = position;
+void main() {
+    vUv = uv;
+    vec3 pos = position;
 
-            // Large stormy waves
-            float largeWave = sin(pos.x * waveFrequency + time) * waveHeight;
-            largeWave += cos(pos.z * waveFrequency + time * 1.5) * waveHeight;
+    // Primary wave
+    pos.y += sin(pos.x * waveFrequency + time * 2.0) * waveHeight * 0.9;
+    pos.y += cos(pos.z * waveFrequency + time * 1.7) * waveHeight * 0.8;
 
-            // Secondary small waves for rough surface
-            float secondaryWave = sin(pos.x * secondaryWaveFrequency + time * 2.0) * secondaryWaveHeight;
-            secondaryWave += cos(pos.z * secondaryWaveFrequency + time * 2.5) * secondaryWaveHeight;
+    // Secondary, higher-frequency waves for choppiness
+    pos.y += sin(pos.x * waveFrequency * 2.5 + time * 3.0) * waveHeight * 0.3;
+    pos.y += cos(pos.z * waveFrequency * 2.5 + time * 2.5) * waveHeight * 0.25;
 
-            pos.y += largeWave + secondaryWave;
+    // Randomized smaller ripples
+    pos.y += sin((pos.x + pos.z) * waveFrequency * 5.0 + time * 4.0) * waveHeight * 0.1;
 
-            vWaveHeight = pos.y; // Pass wave height to fragment shader
-            gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
-        }
-    `,
-    fragmentShader: `
-        uniform vec3 foamColor;
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
+}
+    ,
+    fragmentShader: 
         uniform vec3 deepColor;
         uniform vec3 shallowColor;
         varying vec2 vUv;
-        varying float vWaveHeight;
 
         void main() {
-            // Base color blend based on wave height
             vec3 color = mix(shallowColor, deepColor, vUv.y);
-
-            // Foam effect at wave peaks
-            float foam = smoothstep(1.0, 1.5, abs(vWaveHeight));
-            color = mix(color, foamColor, foam);
-
             gl_FragColor = vec4(color, 1.0);
         }
-    `,
+    ,
 });
 
 // Add Ocean Mesh
 const ocean = new THREE.Mesh(geometry, oceanMaterial);
 scene.add(ocean);
+
+// Rain Geometry
+const rainCount = 10000;
+const rainGeometry = new THREE.BufferGeometry();
+const rainPositions = [];
+const rainVelocities = [];
+
+for (let i = 0; i < rainCount; i++) {
+    const x = (Math.random() - 0.5) * 100;
+    const y = Math.random() * 50;
+    const z = (Math.random() - 0.5) * 100;
+    rainPositions.push(x, y, z);
+    rainVelocities.push(-0.2 - Math.random() * 0.5); // Rain falls downward
+}
+
+rainGeometry.setAttribute("position", new THREE.Float32BufferAttribute(rainPositions, 3));
+
+// Rain Material
+const rainMaterial = new THREE.PointsMaterial({
+    color: 0xffffff,
+    size: 0.2,
+    transparent: true,
+    opacity: 0.8,
+});
+
+// Add Rain Particles
+const rain = new THREE.Points(rainGeometry, rainMaterial);
+scene.add(rain);
 
 // Animation Loop
 const clock = new THREE.Clock();
@@ -115,7 +114,17 @@ function animate() {
     // Update Ocean
     oceanMaterial.uniforms.time.value = elapsedTime;
 
-    // Move Light Source Dynamically
+    // Update Rain
+    const positions = rain.geometry.attributes.position.array;
+    for (let i = 0; i < rainCount; i++) {
+        positions[i * 3 + 1] += rainVelocities[i]; // Y-axis movement (falling)
+        if (positions[i * 3 + 1] < 0) {
+            positions[i * 3 + 1] = 50; // Reset rain drop
+        }
+    }
+    rain.geometry.attributes.position.needsUpdate = true;
+
+    // Move Light Source
     dynamicLight.position.set(
         10 * Math.sin(elapsedTime * 0.5),
         10,
@@ -135,4 +144,3 @@ window.addEventListener("resize", () => {
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
 });
-
