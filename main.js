@@ -33,12 +33,12 @@ geometry.rotateX(-Math.PI / 2);
 const oceanMaterial = new THREE.ShaderMaterial({
     uniforms: {
         time: { value: 0 },
-        waveHeight: { value: 2.5 },
-        waveFrequency: { value: 0.5 },
+        waveHeight: { value: 2.5 }, // Increased wave height
+        waveFrequency: { value: 0.5 }, // Lowered frequency for larger waves
         deepColor: { value: new THREE.Color(0x001d3a) },
         shallowColor: { value: new THREE.Color(0x1e90ff) },
     },
-    vertexShader: `
+    vertexShader: 
         uniform float time;
         uniform float waveHeight;
         uniform float waveFrequency;
@@ -51,8 +51,8 @@ const oceanMaterial = new THREE.ShaderMaterial({
             pos.y += cos(pos.z * waveFrequency + time * 1.5) * waveHeight * 0.6;
             gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
         }
-    `,
-    fragmentShader: `
+    ,
+    fragmentShader: 
         uniform vec3 deepColor;
         uniform vec3 shallowColor;
         varying vec2 vUv;
@@ -61,7 +61,7 @@ const oceanMaterial = new THREE.ShaderMaterial({
             vec3 color = mix(shallowColor, deepColor, vUv.y);
             gl_FragColor = vec4(color, 1.0);
         }
-    `,
+    ,
 });
 
 // Add Ocean Mesh
