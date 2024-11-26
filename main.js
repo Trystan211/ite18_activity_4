@@ -151,7 +151,6 @@ function animate() {
     if (boat) {
         boat.position.x = Math.sin(elapsedTime * 0.5) * 5; // Boat moves along the X-axis with the waves
         boat.position.z = Math.cos(elapsedTime * 0.5) * 5; // Boat moves along the Z-axis with the waves
-        boat.position.y = Math.sin(elapsedTime * 0.5) * 2 + 1; // Boat moves up and down with the ocean
     }
 
     // Render Scene
